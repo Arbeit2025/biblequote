@@ -118,6 +118,16 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn("0件", res.get_data(as_text=True))
 
+    def test_theme_toggle_wired(self):
+        # テーマ切替は CSS変数 + data-theme + localStorage で実際に色が変わる方式
+        res = self.client.get("/")
+        body = res.get_data(as_text=True)
+        self.assertIn('html[data-theme="dark"]', body)
+        self.assertIn("--bg:", body)
+        self.assertIn("background: var(--bg)", body)
+        self.assertIn("toggleTheme", body)
+        self.assertIn("localStorage.setItem('bq-theme'", body)
+
 
 if __name__ == "__main__":
     unittest.main()

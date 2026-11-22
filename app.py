@@ -68,18 +68,19 @@ def get_chapter(book, ch):
 
 
 CSS = """
-:root { color-scheme: light dark; }
+:root { --bg: #faf7f0; --card: #ffffff; --text: #26221c; --border: #999; color-scheme: light; }
+html[data-theme="dark"] { --bg: #171512; --card: #23201b; --text: #ece7dc; --border: #6b655c; color-scheme: dark; }
 * { box-sizing: border-box; }
-body { font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; margin: 0; padding: 16px; line-height: 1.9; }
+body { font-family: "Hiragino Mincho ProN", "Yu Mincho", serif; margin: 0; padding: 16px; line-height: 1.9; background: var(--bg); color: var(--text); }
 main { max-width: 760px; margin: 0 auto; }
 h1 { font-size: 1.5rem; text-align: center; }
-h2 { font-size: 1.15rem; border-bottom: 1px solid #888; padding-bottom: 4px; }
-.card { border: 1px solid #999; border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+h2 { font-size: 1.15rem; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
 .label { font-weight: bold; font-size: 1.1rem; }
 .chap { opacity: 0.75; font-size: 0.9rem; }
-button, .btn { font-size: 1rem; padding: 8px 16px; border-radius: 8px; border: 1px solid #777; background: transparent; color: inherit; cursor: pointer; text-decoration: none; display: inline-block; margin: 4px 4px 4px 0; }
+button, .btn { font-size: 1rem; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; text-decoration: none; display: inline-block; margin: 4px 4px 4px 0; }
 button.small { font-size: 0.8rem; padding: 2px 10px; }
-input[type=text] { font-size: 1rem; padding: 8px; width: 65%; max-width: 420px; }
+input[type=text] { font-size: 1rem; padding: 8px; width: 65%; max-width: 420px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 6px; }
 nav { text-align: center; margin: 12px 0; }
 footer { margin-top: 32px; font-size: 0.85rem; opacity: 0.8; text-align: center; }
 textarea { width: 100%; min-height: 120px; }
@@ -98,19 +99,27 @@ function copyQuote(id) {
   else { el.style.display = 'block'; el.select(); document.execCommand('copy'); el.style.display = 'none'; }
   alert('引用文をコピーしました');
 }
-function toggleTheme() {
-  var root = document.documentElement;
-  var cur = root.style.colorScheme;
-  if (cur === 'dark') { root.style.colorScheme = 'light'; }
-  else if (cur === 'light') { root.style.colorScheme = ''; }
-  else { root.style.colorScheme = 'dark'; }
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
 }
+function toggleTheme() {
+  var cur = document.documentElement.getAttribute('data-theme') || 'light';
+  var next = cur === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('bq-theme', next); } catch (e) {}
+  applyTheme(next);
+}
+(function () {
+  var saved = null;
+  try { saved = localStorage.getItem('bq-theme'); } catch (e) {}
+  if (saved) { applyTheme(saved); }
+  else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { applyTheme('dark'); }
+})();
 """
 
 PAGE = """<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ title }}</title><style>{{ css }}</style></head>
+<title>{{ title }}</title><style>{{ css|safe }}</style></head>
 <body><main>
 <h1>聖書 引用ツール</h1>
 <nav>
@@ -124,7 +133,7 @@ PAGE = """<!DOCTYPE html>
 </form>
 {{ body|safe }}
 <footer>底本：文語訳（旧約＝明治元訳 1887／新約＝大正改訳 1917、パブリックドメイン）。出典：日本語 Wikisource、補完に CrossWire JapBungo。</footer>
-</main><script>{{ script }}</script></body></html>"""
+</main><script>{{ script|safe }}</script></body></html>"""
 
 
 def verse_card(bi, ci, vi, text, quote_id):
